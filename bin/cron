@@ -23,7 +23,7 @@ point, same identifier) can be prevented.
 }
 
 function is_command_available {
-    which "$1" 2>&1 /dev/null
+    which "$1" 2>&1 > /dev/null
     if [[ $? == 0 ]]
     then
         echo "TRUE"
