@@ -1,0 +1,90 @@
+ #!/usr/bin/env bash
+
+function display_help {
+    echo "
+Entry point for system cron jobs. The output of the commands is being logged. Also parallel job execution (this entry
+point, same identifier) can be prevented.
+
+    bin/cron [-h|-e|-l] identifier command
+
+    -h|--help              Display this help message
+    -l|--lock              Prevent parallel execution of a <command> with the same <identifier>.
+    -e|--external          If set, the argument <command> holds a complete command. Otherwise the <command> is passed
+                           to bin/magento.
+    identifier             Used for log file and lock file name
+    command                bin/magento command or external command if -e flag is passed.
+
+    For locking, flock needs to be available.
+
+    example crontab:
+    * * * * * sh <basedir>/bin/cron group-default 'cron:run --group default'
+    0 1 * * * sh <basedir>/bin/cron -external -lock foo 'sh ~/bar/foo.sh'
+    ";
+}
+
+function is_command_available {
+    which "$1" 2>&1 /dev/null
+    return "$?";
+}
+
+## init_variables
+BASEDIR=$(dirname "$0");
+APPLICATIONDIR=${BASEDIR}/..;
+BASE_COMMAND="php ${APPLICATIONDIR}/bin/magento";
+IDENTIFIER='NOT SET';
+COMMAND="NOT SET";
+LOCK_COMMAND="NO";
+
+## parse_arguments
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    if [[ $key == "-h" || $key == "--help" ]]
+    then
+        display_help;
+        exit 0;
+    elif [[ $key == "-e" || $key == "--external" ]]
+    then
+        BASE_COMMAND='';
+    elif [[ $key == "-l" || $key == "--lock" ]]
+    then
+        if is_command_available flock
+        then
+            LOCK_COMMAND="YES";
+        else
+            echo "WARNING: Command will not be locked, flock is probably not installed."
+        fi
+    elif [[ "$IDENTIFIER" == "NOT SET" ]]
+    then
+        IDENTIFIER="$key";
+    elif [[ "$COMMAND" == "NOT SET" ]]
+    then
+        COMMAND="${BASE_COMMAND} $key";
+    fi
+    shift
+done
+
+## validate_arguments
+if [[ "$IDENTIFIER" == "NOT SET" || "$COMMAND" == "NOT SET" ]]
+then
+    echo 'ERROR: missing argument'
+    display_help;
+    exit 1;
+fi
+
+LOG_FILE="${APPLICATIONDIR}/var/log/cron-$IDENTIFIER.log"
+LOCK_FILE="/var/lock/$IDENTIFIER.lock"
+
+if [[ ${LOCK_COMMAND} == "YES" ]]
+then
+    date >> ${LOG_FILE} && \
+    flock -n ${LOCK_FILE} ${COMMAND} >> ${LOG_FILE} 2>&1;
+    if [[ $? == 1 ]]
+    then
+      echo 'skipped' >> ${LOG_FILE}
+    fi
+else
+    date >> ${LOG_FILE} && \
+    ${COMMAND} >> ${LOG_FILE} 2>&1;
+fi

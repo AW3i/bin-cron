@@ -1,0 +1,16 @@
+{
+  "name": "magenerds/bin-cron",
+  "description": "Wrapper for magento cron command (and others) supporting logging and locking.",
+  "type": "magento2-component",
+  "require": {
+    "magento/magento2-base": "~2.1"
+  },
+  "extra": {
+    "map": [
+      [
+        "bin/cron",
+        "bin/cron"
+      ]
+    ]
+  }
+}
