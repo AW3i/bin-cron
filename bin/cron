@@ -24,7 +24,12 @@ point, same identifier) can be prevented.
 
 function is_command_available {
     which "$1" 2>&1 /dev/null
-    return "$?";
+    if [[ $? == 0 ]]
+    then
+        echo "TRUE"
+    else
+        echo "FALSE"
+    fi
 }
 
 ## init_variables
@@ -49,7 +54,7 @@ do
         BASE_COMMAND='';
     elif [[ $key == "-l" || $key == "--lock" ]]
     then
-        if is_command_available flock
+        if [[ $(is_command_available flock) == "TRUE" ]]
         then
             LOCK_COMMAND="YES";
         else
