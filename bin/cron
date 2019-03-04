@@ -1,4 +1,4 @@
- #!/usr/bin/env bash
+#!/usr/bin/env bash
 
 function display_help {
     echo "
@@ -23,8 +23,7 @@ point, same identifier) can be prevented.
 }
 
 function is_command_available {
-    which "$1" 2>&1 > /dev/null
-    if [[ $? == 0 ]]
+    if command -v "$1" > /dev/null 2>&1
     then
         echo "TRUE"
     else
@@ -83,13 +82,13 @@ LOCK_FILE="/var/lock/$IDENTIFIER.lock"
 
 if [[ ${LOCK_COMMAND} == "YES" ]]
 then
-    date >> ${LOG_FILE} && \
-    flock -n ${LOCK_FILE} ${COMMAND} >> ${LOG_FILE} 2>&1;
+    date >> "${LOG_FILE}" && \
+    flock -n "${LOCK_FILE}" "${COMMAND}" >> "${LOG_FILE}" 2>&1;
     if [[ $? == 1 ]]
     then
-      echo 'skipped' >> ${LOG_FILE}
+      echo 'skipped' >> "${LOG_FILE}"
     fi
 else
-    date >> ${LOG_FILE} && \
-    ${COMMAND} >> ${LOG_FILE} 2>&1;
+    date >> "${LOG_FILE}" && \
+    "${COMMAND}" >> "${LOG_FILE}" 2>&1;
 fi
